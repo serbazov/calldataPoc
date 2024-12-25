@@ -4,25 +4,23 @@ import "hardhat/console.sol";
 import "./UnsafeCalldataBytesLib.sol";
 
 contract DataProcessor {
+    uint256 internal constant STANDARD_SLOT_BS = 32;
     bytes32 public storedData;
 
     function processData(uint256 timestamp) external {
-        uint256 payloadOffset = 0x04 + 0x20; // 4 bytes for selector, 32 bytes for timestamp
-
-        require(msg.data.length >= payloadOffset + 32, "Payload too short");
         bytes32 messageEncoded;
-
         assembly {
-            messageEncoded := calldataload(payloadOffset)
+            messageEncoded := calldataload(
+                sub(calldatasize(), STANDARD_SLOT_BS)
+            )
         }
         storedData = messageEncoded;
     }
-    function processDataExplicit(bytes calldata _calldata) external {
-        uint256 _timestamp = UnsafeCalldataBytesLib.toUint256(_calldata, 0);
-        bytes32 messageEncoded = UnsafeCalldataBytesLib.toBytes32(
-            _calldata,
-            32
-        );
+    function processDataExplicit(
+        uint256 timestamp,
+        bytes calldata _calldata
+    ) external {
+        bytes32 messageEncoded = UnsafeCalldataBytesLib.toBytes32(_calldata, 0);
         storedData = messageEncoded;
     }
 }
